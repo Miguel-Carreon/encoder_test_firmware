@@ -4,32 +4,44 @@
 
 #define encoderCLK 15
 #define encoderDT 14
+#define encoder2CLK A1
+#define encoder2DT A0
 
 ClickEncoder *encoder; //Variable representing the rotary encoder
+ClickEncoder *encoder2; //Variable representing the seccond rotary encoder
 int16_t last, value; //Variables for current and last rotation value
+int16_t last2, value2; //Variables for current and last rotation value for the seccond encoder
 
 void timerIsr() {
   encoder->service();
+  encoder2->service();
 }
 
 
 void setup() {
   
-  Serial.begin(9600);
+  Serial.begin(115200);
+  
   encoder = new ClickEncoder(encoderDT, encoderCLK); //Encoder pinout definitions
+  encoder2 = new ClickEncoder(encoder2DT, encoder2CLK); //Encoder2 pinout definitions
   
   Timer1.initialize(1000); //Initialize the timer
   Timer1.attachInterrupt(timerIsr);
+  
   last = -1;
+  last2 = -1;
 
 }
 
 void loop() {
 
   static unsigned long lastIteration;
+  static unsigned long lastIteration2;
   unsigned long iterationTime = millis();
+  unsigned long iterationTime2 = millis();
   
   value += encoder->getValue();
+  value2 += encoder2->getValue();
 
   if (value != last){
 
@@ -51,6 +63,29 @@ void loop() {
     }
 
     last = value;
+    
+  }
+
+  if (value2 != last2){
+
+    if (iterationTime2 - lastIteration2 > 50){
+      if (last2 < value2){
+        //CW function
+        Keyboard.press(KEY_RIGHT_ARROW);
+        Keyboard.release(KEY_RIGHT_ARROW);
+      }
+
+      else {
+        //CCW function
+        Keyboard.press(KEY_LEFT_ARROW);
+        Keyboard.release(KEY_LEFT_ARROW);
+      }
+
+      lastIteration2 = iterationTime2;
+      
+    }
+
+    last2 = value2;
     
   }
 
